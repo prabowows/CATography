@@ -49,7 +49,7 @@ def download_file(filename):
         return jsonify({"error": "Invalid file format"}), 400
     return send_from_directory(DATA_DIR, filename, as_attachment=True)
 
-DEFAULT_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "AIzaSyCnc0z8deZ5ypklObkR_8DWJRn_zK8iD-k")
+GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "AIzaSyCnc0z8deZ5ypklObkR_8DWJRn_zK8iD-k")
 
 @app.route('/api/search', methods=['POST'])
 def search():
@@ -57,10 +57,10 @@ def search():
     kueri = data.get('kueri')
     daerah = data.get('daerah')
     radius = data.get('radius')
-    api_key = data.get('api_key') or DEFAULT_API_KEY
+    api_key = GOOGLE_PLACES_API_KEY
 
-    if not kueri or not api_key:
-        return jsonify({"error": "Kueri and API Key are required"}), 400
+    if not kueri:
+        return jsonify({"error": "Kueri is required"}), 400
 
     # Combine kueri and daerah for Text Search
     if daerah:
@@ -140,12 +140,12 @@ def search_next():
     data = request.json
     print(f"[DEBUG] Received data in search_next: {data}")
     next_page_token = data.get('next_page_token')
-    api_key = data.get('api_key') or DEFAULT_API_KEY
+    api_key = GOOGLE_PLACES_API_KEY
     kueri = data.get('kueri')
     daerah = data.get('daerah')
 
-    if not next_page_token or not api_key:
-        return jsonify({"error": "Next page token and API Key are required"}), 400
+    if not next_page_token:
+        return jsonify({"error": "Next page token is required"}), 400
 
     if daerah:
         query = f"{kueri} {daerah}"
@@ -263,12 +263,10 @@ def save_csv():
 def fetch_reviews():
     data = request.json
     places = data.get('places', [])
-    api_key = data.get('api_key') or DEFAULT_API_KEY
+    api_key = GOOGLE_PLACES_API_KEY
     query = data.get('query', 'query')
     language = data.get('language', 'id')
 
-    if not api_key:
-        return jsonify({"error": "API Key is required"}), 400
     if not places:
         return jsonify({"error": "No places selected"}), 400
 
@@ -391,11 +389,11 @@ def fetch_reviews():
 def fetch_single_place_reviews():
     data = request.json
     place_id = data.get('place_id')
-    api_key = data.get('api_key') or DEFAULT_API_KEY
+    api_key = GOOGLE_PLACES_API_KEY
     language = data.get('language', 'id')
 
-    if not place_id or not api_key:
-        return jsonify({"error": "place_id and api_key are required"}), 400
+    if not place_id:
+        return jsonify({"error": "place_id is required"}), 400
 
     endpoint = "details/json"
     params = {
