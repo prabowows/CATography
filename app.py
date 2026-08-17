@@ -7,8 +7,11 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
-# Directory where CSVs will be saved
-DATA_DIR = os.path.dirname(os.path.abspath(__file__))
+# Directory where CSVs will be saved (uses /tmp on Vercel serverless)
+if os.environ.get('VERCEL') or not os.access(os.path.dirname(os.path.abspath(__file__)), os.W_OK):
+    DATA_DIR = '/tmp'
+else:
+    DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
 BASE_URL = "https://maps.googleapis.com/maps/api/place/"
 
