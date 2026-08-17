@@ -49,13 +49,15 @@ def download_file(filename):
         return jsonify({"error": "Invalid file format"}), 400
     return send_from_directory(DATA_DIR, filename, as_attachment=True)
 
+DEFAULT_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "AIzaSyCnc0z8deZ5ypklObkR_8DWJRn_zK8iD-k")
+
 @app.route('/api/search', methods=['POST'])
 def search():
     data = request.json
     kueri = data.get('kueri')
     daerah = data.get('daerah')
     radius = data.get('radius')
-    api_key = data.get('api_key')
+    api_key = data.get('api_key') or DEFAULT_API_KEY
 
     if not kueri or not api_key:
         return jsonify({"error": "Kueri and API Key are required"}), 400
@@ -138,7 +140,7 @@ def search_next():
     data = request.json
     print(f"[DEBUG] Received data in search_next: {data}")
     next_page_token = data.get('next_page_token')
-    api_key = data.get('api_key')
+    api_key = data.get('api_key') or DEFAULT_API_KEY
     kueri = data.get('kueri')
     daerah = data.get('daerah')
 
@@ -261,7 +263,7 @@ def save_csv():
 def fetch_reviews():
     data = request.json
     places = data.get('places', [])
-    api_key = data.get('api_key')
+    api_key = data.get('api_key') or DEFAULT_API_KEY
     query = data.get('query', 'query')
     language = data.get('language', 'id')
 
@@ -389,7 +391,7 @@ def fetch_reviews():
 def fetch_single_place_reviews():
     data = request.json
     place_id = data.get('place_id')
-    api_key = data.get('api_key')
+    api_key = data.get('api_key') or DEFAULT_API_KEY
     language = data.get('language', 'id')
 
     if not place_id or not api_key:
