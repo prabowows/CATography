@@ -1,5 +1,5 @@
 # 🐾 CATography
-> **"Find Your Purr-fect Business Location."**
+> **"Find Your Purrrr-fect Business Location."**
 
 ![CATography Banner](https://img.shields.io/badge/Status-Active-brightgreen)
 ![Python](https://img.shields.io/badge/Backend-Python%20%7C%20Flask-blue)
