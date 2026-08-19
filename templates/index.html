@@ -321,7 +321,7 @@
                         </div>
                         <div class="flex items-center gap-2 pointer-events-auto bg-white/90 backdrop-blur-md border border-outline-variant/30 rounded-xl px-3 py-1 text-xs text-on-surface font-medium shadow-sm">
                             <span class="material-symbols-outlined text-primary text-base">map</span>
-                            <span id="mapStatusText">Yogyakarta / Ready</span>
+                            <span id="mapStatusText">Sleman / Ready</span>
                         </div>
                     </div>
 
@@ -531,6 +531,7 @@
 
         const toggleMarkersBtn = document.getElementById('toggleMarkersBtn');
         const toggleHeatmapBtn = document.getElementById('toggleHeatmapBtn');
+        const mapStatusText = document.getElementById('mapStatusText');
 
         const historyModal = document.getElementById('historyModal');
         const toggleHistoryModalBtn = document.getElementById('toggleHistoryModalBtn');
@@ -539,14 +540,25 @@
         const emptyStateContainer = document.getElementById('emptyStateContainer');
         const dashboardSection = document.getElementById('dashboardSection');
 
+        function updateMapStatus(status = 'Ready') {
+            const region = daerahInput.value.trim() || searchQueryInput.value.trim() || 'Peta';
+            if (mapStatusText) {
+                mapStatusText.innerText = `${region} / ${status}`;
+            }
+        }
+
         // Initialize App on DOM Loaded
         window.addEventListener('DOMContentLoaded', () => {
             initMap();
             initChart();
             loadHistory();
+            updateMapStatus();
 
             // Event Listeners
             startSearchBtn.addEventListener('click', runSearch);
+            daerahInput.addEventListener('input', () => {
+                if (activePlaces.length === 0) updateMapStatus();
+            });
             fetchReviewsBtn.addEventListener('click', runReviewsScraping);
             downloadPlacesBtn.addEventListener('click', () => downloadCsv(placesFilename));
 
@@ -646,6 +658,7 @@
             }
 
             warningBanner.style.display = 'none';
+            updateMapStatus('Memuat...');
 
             const totalPages = maxResults / 20;
             showProgress('Miaw! Mengendus Halaman 1...', `Mengambil data dari Google API... (1/${totalPages}) 🐾`, true);
@@ -661,6 +674,7 @@
 
                 if (data.error) {
                     hideProgress();
+                    updateMapStatus('Ready');
                     warningBannerText.innerText = data.error;
                     warningBanner.style.display = 'flex';
                     return;
@@ -668,6 +682,7 @@
 
                 if (!data.places || data.places.length === 0) {
                     hideProgress();
+                    updateMapStatus('Ready');
                     alert('Tidak ditemukan tempat dengan kueri tersebut.');
                     return;
                 }
@@ -749,6 +764,7 @@
 
             } catch (err) {
                 hideProgress();
+                updateMapStatus('Ready');
                 alert('Kesalahan koneksi ke server: ' + err.message);
             }
         }
@@ -798,6 +814,8 @@
         // Render Dashboard & Updates
         function renderDashboard() {
             if (activePlaces.length === 0) return;
+
+            updateMapStatus(`${activePlaces.length} Lokasi`);
 
             kpiPlaces.innerText = activePlaces.length;
 
