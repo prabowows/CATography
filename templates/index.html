@@ -842,11 +842,8 @@
                 tr.className = 'hover:bg-surface-container-low/60 transition-colors cursor-pointer';
 
                 const ratingText = p.Rating && p.Rating !== 'N/A' && p.Rating > 0 ? p.Rating : 'N/A';
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p["Nama Juice Buah"] + " " + p.Alamat)}&query_place_id=${p.place_id}`;
-                const coverUrl = p.FotoSampul || (p.Foto && p.Foto.length > 0 ? p.Foto[0] : null);
-                const thumbMarkup = coverUrl
-                    ? `<img src="${coverUrl}" class="w-8 h-8 rounded-lg object-cover border border-outline-variant/30 flex-shrink-0" alt="Thumb" onerror="this.parentElement.innerHTML='<span class=\\'material-symbols-outlined text-sm text-on-surface-variant\\'>storefront</span>'"/>`
-                    : `<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0 text-on-surface-variant"><span class="material-symbols-outlined text-sm">storefront</span></div>`;
+                const mapsUrl = p.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p["Nama Juice Buah"] + " " + p.Alamat)}&query_place_id=${p.place_id}`;
+                const thumbMarkup = `<div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-base">storefront</span></div>`;
 
                 tr.innerHTML = `
                     <td class="py-3 px-3 font-semibold text-on-surface">
@@ -882,16 +879,19 @@
                     heatData.push([p.lat, p.lng, p.Rating && p.Rating !== 'N/A' ? parseFloat(p.Rating) : 1]);
 
                     const marker = L.marker([p.lat, p.lng]);
-                    const coverUrl = p.FotoSampul || (p.Foto && p.Foto.length > 0 ? p.Foto[0] : null);
+                    const mapsUrl = p.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p["Nama Juice Buah"] + " " + p.Alamat)}&query_place_id=${p.place_id}`;
                     const popupContent = `
-                        <div style="font-family: 'Inter', sans-serif; width: 230px;">
-                            ${coverUrl ? `<div style="width:100%; height:110px; overflow:hidden; border-radius:8px; margin-bottom:8px; background:#f2f4f6;"><img src="${coverUrl}" style="width:100%; height:100%; object-fit:cover;" alt="Cover" onerror="this.parentElement.style.display='none'"/></div>` : ''}
+                        <div style="font-family: 'Inter', sans-serif; width: 220px;">
                             <h4 style="margin:0 0 4px 0; font-size:13px; font-weight:700; color:#191c1e;">${p["Nama Juice Buah"]}</h4>
                             <p style="margin:0 0 6px 0; font-size:11px; color:#41493e;">${p.Alamat}</p>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <span style="background:#fff0e6; color:#c85a15; padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px;">⭐ ${p.Rating}</span>
                                 <span style="font-size:10px; color:#717a6d;">💬 ${p["Total Reviews"]} ulasan</span>
                             </div>
+                            <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:#e47127; text-decoration:none;">
+                                <span>Lihat Foto & Detail di Google Maps</span>
+                                <span style="font-size:12px;">↗</span>
+                            </a>
                         </div>
                     `;
                     marker.bindPopup(popupContent);
@@ -984,32 +984,29 @@
             }
 
             const placePhotosContainer = document.getElementById('placePhotosContainer');
-            const renderPhotosGallery = (photos) => {
-                if (photos && photos.length > 0) {
-                    placePhotosContainer.classList.remove('hidden');
-                    placePhotosContainer.innerHTML = `
-                        <h4 class="text-[11px] font-bold text-on-surface uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-sm text-primary">photo_camera</span>
-                            <span>Foto Tempat (${photos.length})</span>
-                        </h4>
-                        <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                            ${photos.map(url => `
-                                <a href="${url}" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 w-24 h-20 rounded-xl overflow-hidden border border-outline-variant/30 group relative bg-surface-container">
-                                    <img src="${url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt="Foto Tempat" onerror="this.parentElement.style.display='none'" />
-                                    <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <span class="material-symbols-outlined text-white text-sm">zoom_in</span>
-                                    </div>
-                                </a>
-                            `).join('')}
+            const renderPhotosGallery = (place) => {
+                const mapsUrl = place.maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place["Nama Juice Buah"] + " " + place.Alamat)}&query_place_id=${place.place_id}`;
+                placePhotosContainer.classList.remove('hidden');
+                placePhotosContainer.innerHTML = `
+                    <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-3 bg-surface-container-low hover:bg-surface-container border border-outline-variant/40 rounded-xl transition-all group shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-base">photo_library</span>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                                    <span>Galeri Foto Tempat</span>
+                                    <span class="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">Buka Google Maps ↗</span>
+                                </div>
+                                <div class="text-[11px] text-on-surface-variant">Lihat foto toko, suasana, & menu di Google Maps</div>
+                            </div>
                         </div>
-                    `;
-                } else {
-                    placePhotosContainer.classList.add('hidden');
-                    placePhotosContainer.innerHTML = '';
-                }
+                        <span class="material-symbols-outlined text-base text-primary group-hover:translate-x-0.5 transition-transform">open_in_new</span>
+                    </a>
+                `;
             };
 
-            renderPhotosGallery(place.Foto || []);
+            renderPhotosGallery(place);
 
             const renderReviewsList = (reviews) => {
                 if (reviews && reviews.length > 0) {
@@ -1061,10 +1058,6 @@
                     const data = await response.json();
                     if (data.success) {
                         if (data.reviews) place.Ulasan = data.reviews;
-                        if (data.photos && data.photos.length > 0) {
-                            place.Foto = data.photos;
-                            renderPhotosGallery(place.Foto);
-                        }
                         renderReviewsList(place.Ulasan || []);
                     } else {
                         renderReviewsList([]);

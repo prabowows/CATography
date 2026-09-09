@@ -72,7 +72,7 @@ def search():
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": api_key,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.reviews,places.photos,nextPageToken"
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.reviews,nextPageToken"
     }
     payload = {
         "textQuery": query,
@@ -99,24 +99,23 @@ def search():
                         "Waktu Ulasan": r.get("relativePublishTimeDescription", "N/A")
                     })
                 
-                raw_photos = place.get("photos", [])
-                photo_urls = []
-                for ph in raw_photos[:5]:
-                    ph_name = ph.get("name")
-                    if ph_name:
-                        photo_urls.append(f"https://places.googleapis.com/v1/{ph_name}/media?maxHeightPx=400&maxWidthPx=400&key={api_key}")
+                place_id = place.get("id")
+                place_name = place.get("displayName", {}).get("text", "N/A")
+                place_address = place.get("formattedAddress", "N/A")
+                maps_url = f"https://www.google.com/maps/search/?api=1&query={requests.utils.quote(place_name + ' ' + place_address)}&query_place_id={place_id}"
 
                 places.append({
-                    "place_id": place.get("id"),
-                    "Nama Juice Buah": place.get("displayName", {}).get("text", "N/A"),
+                    "place_id": place_id,
+                    "Nama Juice Buah": place_name,
                     "Rating": place.get("rating", "N/A"),
                     "Total Reviews": place.get("userRatingCount", "N/A"),
-                    "Alamat": place.get("formattedAddress", "N/A"),
+                    "Alamat": place_address,
                     "lat": loc.get("latitude"),
                     "lng": loc.get("longitude"),
                     "Ulasan": parsed_reviews,
-                    "Foto": photo_urls,
-                    "FotoSampul": photo_urls[0] if photo_urls else None
+                    "Foto": [],
+                    "FotoSampul": None,
+                    "maps_url": maps_url
                 })
             
             print(f"[DEBUG] Page 1 loaded {len(places)} places. Next page token exists: {res_data.get('nextPageToken') is not None}")
@@ -156,7 +155,7 @@ def search_next():
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": api_key,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.reviews,places.photos,nextPageToken"
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.location,places.reviews,nextPageToken"
     }
     payload = {
         "textQuery": query,
@@ -184,24 +183,23 @@ def search_next():
                         "Waktu Ulasan": r.get("relativePublishTimeDescription", "N/A")
                     })
                 
-                raw_photos = place.get("photos", [])
-                photo_urls = []
-                for ph in raw_photos[:5]:
-                    ph_name = ph.get("name")
-                    if ph_name:
-                        photo_urls.append(f"https://places.googleapis.com/v1/{ph_name}/media?maxHeightPx=400&maxWidthPx=400&key={api_key}")
+                place_id = place.get("id")
+                place_name = place.get("displayName", {}).get("text", "N/A")
+                place_address = place.get("formattedAddress", "N/A")
+                maps_url = f"https://www.google.com/maps/search/?api=1&query={requests.utils.quote(place_name + ' ' + place_address)}&query_place_id={place_id}"
 
                 places.append({
-                    "place_id": place.get("id"),
-                    "Nama Juice Buah": place.get("displayName", {}).get("text", "N/A"),
+                    "place_id": place_id,
+                    "Nama Juice Buah": place_name,
                     "Rating": place.get("rating", "N/A"),
                     "Total Reviews": place.get("userRatingCount", "N/A"),
-                    "Alamat": place.get("formattedAddress", "N/A"),
+                    "Alamat": place_address,
                     "lat": loc.get("latitude"),
                     "lng": loc.get("longitude"),
                     "Ulasan": parsed_reviews,
-                    "Foto": photo_urls,
-                    "FotoSampul": photo_urls[0] if photo_urls else None
+                    "Foto": [],
+                    "FotoSampul": None,
+                    "maps_url": maps_url
                 })
             
             print(f"[DEBUG] Next page loaded {len(places)} places. Next page token exists: {res_data.get('nextPageToken') is not None}")
@@ -239,9 +237,9 @@ def save_csv():
         
         with open(file_path, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(["Nama Juice Buah", "Rating", "Total Reviews", "Alamat", "Latitude", "Longitude", "Place ID", "Foto Sampul"])
+            writer.writerow(["Nama Juice Buah", "Rating", "Total Reviews", "Alamat", "Latitude", "Longitude", "Place ID", "Google Maps Link"])
             for p in places:
-                foto_cover = p.get("FotoSampul") or (p.get("Foto")[0] if p.get("Foto") else "")
+                maps_url = p.get("maps_url") or f"https://www.google.com/maps/search/?api=1&query={requests.utils.quote(str(p.get('Nama Juice Buah', '')) + ' ' + str(p.get('Alamat', '')))}&query_place_id={p.get('place_id', '')}"
                 writer.writerow([
                     p.get("Nama Juice Buah") or p.get("name"),
                     p.get("Rating") or p.get("rating"),
@@ -250,7 +248,7 @@ def save_csv():
                     p.get("lat"),
                     p.get("lng"),
                     p.get("place_id"),
-                    foto_cover
+                    maps_url
                 ])
         return jsonify({
             "success": True,
@@ -400,7 +398,7 @@ def fetch_single_place_reviews():
         "place_id": place_id,
         "key": api_key,
         "language": language,
-        "fields": "name,rating,formatted_address,user_ratings_total,reviews,photos"
+        "fields": "name,rating,formatted_address,user_ratings_total,reviews"
     }
 
     try:
@@ -418,16 +416,10 @@ def fetch_single_place_reviews():
                     "Waktu Ulasan": r.get("relative_time_description", "N/A")
                 })
 
-            photos = []
-            for ph in details.get("photos", [])[:5]:
-                pref = ph.get("photo_reference")
-                if pref:
-                    photos.append(f"https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&maxheight=400&photo_reference={pref}&key={api_key}")
-
             return jsonify({
                 "success": True,
                 "reviews": reviews,
-                "photos": photos
+                "photos": []
             })
         else:
             err_msg = res_data.get("error_message") or res_data.get("status", "Error fetching details")
