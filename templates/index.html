@@ -152,11 +152,17 @@
                 </div>
             </div>
 
-            <div class="flex-1 w-full">
+            <div class="flex-1 w-full relative" id="regionComboboxContainer">
                 <label class="block text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-2">REGION / CITY</label>
                 <div class="relative">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50">location_on</span>
-                    <input id="daerahCode" type="text" placeholder="e.g., Sleman, Yogyakarta" class="w-full bg-surface border border-outline-variant/50 rounded-xl py-3 pl-10 pr-4 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" value="Sleman" />
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none">location_on</span>
+                    <input id="daerahCode" type="text" autocomplete="off" placeholder="Pilih atau cari kota/kabupaten..." class="w-full bg-surface border border-outline-variant/50 rounded-xl py-3 pl-10 pr-10 text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer" value="Kabupaten Sleman" />
+                    <button type="button" id="toggleRegionDropdownBtn" class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 hover:text-primary transition-colors focus:outline-none p-1">
+                        <span class="material-symbols-outlined text-lg transition-transform duration-200" id="regionArrow">expand_more</span>
+                    </button>
+                </div>
+                <!-- Dropdown suggestions -->
+                <div id="regionDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-surface-container-lowest border border-outline-variant/40 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar divide-y divide-outline-variant/10">
                 </div>
             </div>
 
@@ -551,6 +557,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             initMap();
             initChart();
+            initRegionCombobox();
             loadHistory();
             updateMapStatus();
 
@@ -568,6 +575,101 @@
             toggleHistoryModalBtn.addEventListener('click', () => historyModal.classList.remove('hidden'));
             closeHistoryModalBtn.addEventListener('click', () => historyModal.classList.add('hidden'));
         });
+
+        // Searchable Region Combobox
+        let allRegions = [];
+        const regionDropdown = document.getElementById('regionDropdown');
+        const regionArrow = document.getElementById('regionArrow');
+        const toggleRegionDropdownBtn = document.getElementById('toggleRegionDropdownBtn');
+
+        async function initRegionCombobox() {
+            try {
+                const res = await fetch('/static/indonesia_regions.json');
+                allRegions = await res.json();
+            } catch (e) {
+                console.error("Gagal memuat daftar wilayah:", e);
+            }
+
+            function renderRegionList(filterText = '') {
+                const query = filterText.toLowerCase().trim();
+                let filtered = allRegions;
+                if (query) {
+                    filtered = allRegions.filter(r => 
+                        r.name.toLowerCase().includes(query) || 
+                        r.province.toLowerCase().includes(query)
+                    );
+                }
+
+                if (filtered.length === 0) {
+                    regionDropdown.innerHTML = `
+                        <div class="p-4 text-xs text-on-surface-variant text-center">
+                            Tidak ditemukan wilayah "${filterText}"
+                        </div>
+                    `;
+                } else {
+                    regionDropdown.innerHTML = filtered.slice(0, 60).map(r => `
+                        <div class="region-item px-3.5 py-2.5 hover:bg-surface-container cursor-pointer transition-colors flex items-center justify-between group" data-name="${r.name}">
+                            <div class="flex items-center gap-2.5 truncate">
+                                <span class="material-symbols-outlined text-outline group-hover:text-primary text-base transition-colors shrink-0">location_city</span>
+                                <span class="text-xs font-semibold text-on-surface group-hover:text-primary transition-colors truncate">${r.name}</span>
+                            </div>
+                            <span class="text-[10px] text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-md font-medium shrink-0 ml-2">${r.province}</span>
+                        </div>
+                    `).join('');
+
+                    regionDropdown.querySelectorAll('.region-item').forEach(el => {
+                        el.addEventListener('click', () => {
+                            daerahInput.value = el.dataset.name;
+                            closeRegionDropdown();
+                            if (activePlaces.length === 0) updateMapStatus();
+                        });
+                    });
+                }
+            }
+
+            function openRegionDropdown() {
+                renderRegionList(daerahInput.value);
+                regionDropdown.classList.remove('hidden');
+                if (regionArrow) regionArrow.classList.add('rotate-180');
+            }
+
+            function closeRegionDropdown() {
+                regionDropdown.classList.add('hidden');
+                if (regionArrow) regionArrow.classList.remove('rotate-180');
+            }
+
+            daerahInput.addEventListener('focus', openRegionDropdown);
+            daerahInput.addEventListener('input', () => {
+                renderRegionList(daerahInput.value);
+                regionDropdown.classList.remove('hidden');
+                if (regionArrow) regionArrow.classList.add('rotate-180');
+            });
+
+            if (toggleRegionDropdownBtn) {
+                toggleRegionDropdownBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (regionDropdown.classList.contains('hidden')) {
+                        daerahInput.focus();
+                        openRegionDropdown();
+                    } else {
+                        closeRegionDropdown();
+                    }
+                });
+            }
+
+            document.addEventListener('click', (e) => {
+                const container = document.getElementById('regionComboboxContainer');
+                if (container && !container.contains(e.target)) {
+                    closeRegionDropdown();
+                }
+            });
+
+            daerahInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeRegionDropdown();
+                }
+            });
+        }
 
         // Initialize Leaflet Map
         function initMap() {
