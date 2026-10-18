@@ -49,7 +49,7 @@ def download_file(filename):
         return jsonify({"error": "Invalid file format"}), 400
     return send_from_directory(DATA_DIR, filename, as_attachment=True)
 
-GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "AIzaSyCnc0z8deZ5ypklObkR_8DWJRn_zK8iD-k")
+GOOGLE_PLACES_API_KEY = os.environ.get("GOOGLE_PLACES_API_KEY", "AIzaSyCEXbCFDJpTIkfbuoCh4cLYEyrdocIOFQk")
 
 @app.route('/api/search', methods=['POST'])
 def search():
